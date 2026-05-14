@@ -1,48 +1,58 @@
-"""Command-line interface for envdiff."""
+"""CLI entry point for envdiff."""
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
 from envdiff.core import diff_envs
-from envdiff.formatter import format_diff_text, format_diff_json
+from envdiff.formatter import format_diff_json, format_diff_text
+from envdiff.parser import parse_env_file
 from envdiff.syncer import apply_sync
+from envdiff.validator import validate_env_file
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="envdiff",
-        description="Diff and sync .env files across environments.",
+        description="Diff and sync .env files across environments safely.",
     )
-    subparsers = parser.add_subparsers(dest="command", required=True)
+    sub = parser.add_subparsers(dest="command", required=True)
 
-    # diff subcommand
-    diff_cmd = subparsers.add_parser("diff", help="Show differences between two .env files")
-    diff_cmd.add_argument("source", type=Path, help="Source .env file")
-    diff_cmd.add_argument("target", type=Path, help="Target .env file")
-    diff_cmd.add_argument("--format", choices=["text", "json"], default="text")
+    # diff
+    diff_p = sub.add_parser("diff", help="Show differences between two .env files")
+    diff_p.add_argument("base", help="Base .env file")
+    diff_p.add_argument("target", help="Target .env file")
+    diff_p.add_argument("--format", choices=["text", "json"], default="text")
 
-    # sync subcommand
-    sync_cmd = subparsers.add_parser("sync", help="Sync missing keys from source to target")
-    sync_cmd.add_argument("source", type=Path, help="Source .env file")
-    sync_cmd.add_argument("target", type=Path, help="Target .env file")
-    sync_cmd.add_argument("--dry-run", action="store_true", help="Preview changes without writing")
-    sync_cmd.add_argument("--overwrite", action="store_true", help="Also update differing values")
+    # sync
+    sync_p = sub.add_parser("sync", help="Sync keys from base into target")
+    sync_p.add_argument("base", help="Base .env file (source of truth)")
+    sync_p.add_argument("target", help="Target .env file to update")
+    sync_p.add_argument("--overwrite", action="store_true", default=False)
+    sync_p.add_argument("--dry-run", action="store_true", default=False)
+
+    # validate
+    val_p = sub.add_parser("validate", help="Validate a .env file")
+    val_p.add_argument("file", help=".env file to validate")
+    val_p.add_argument("--require", nargs="*", metavar="KEY", default=[])
+    val_p.add_argument("--forbid", nargs="*", metavar="KEY", default=[])
 
     return parser
 
 
-def _check_paths_exist(*paths: Path) -> None:
-    """Raise SystemExit if any of the given paths do not exist."""
-    for path in paths:
-        if not path.exists():
-            print(f"error: file not found: {path}", file=sys.stderr)
-            sys.exit(2)
+def _check_paths_exist(*paths: str) -> None:
+    for p in paths:
+        if not Path(p).exists():
+            print(f"Error: file not found: {p}", file=sys.stderr)
+            sys.exit(1)
 
 
-def cmd_diff(args) -> int:
-    _check_paths_exist(args.source, args.target)
-    result = diff_envs(args.source, args.target)
+def cmd_diff(args: argparse.Namespace) -> int:
+    _check_paths_exist(args.base, args.target)
+    base_env = parse_env_file(args.base)
+    target_env = parse_env_file(args.target)
+    result = diff_envs(base_env, target_env)
     if args.format == "json":
         print(format_diff_json(result))
     else:
@@ -50,31 +60,36 @@ def cmd_diff(args) -> int:
     return 0 if not result.has_diff() else 1
 
 
-def cmd_sync(args) -> int:
-    _check_paths_exist(args.source, args.target)
-    result = diff_envs(args.source, args.target)
-    summary = apply_sync(
-        result,
-        target_path=args.target,
-        dry_run=args.dry_run,
-        overwrite_existing=args.overwrite,
+def cmd_sync(args: argparse.Namespace) -> int:
+    _check_paths_exist(args.base, args.target)
+    base_env = parse_env_file(args.base)
+    target_env = parse_env_file(args.target)
+    result = diff_envs(base_env, target_env)
+    if args.dry_run:
+        print(format_diff_text(result))
+        return 0
+    apply_sync(result, args.target, overwrite=args.overwrite)
+    print(f"Sync complete: {args.target}")
+    return 0
+
+
+def cmd_validate(args: argparse.Namespace) -> int:
+    _check_paths_exist(args.file)
+    result = validate_env_file(
+        args.file,
+        required_keys=args.require or None,
+        forbidden_keys=args.forbid or None,
     )
-    label = "[dry-run] " if args.dry_run else ""
-    print(f"{label}Sync complete: +{len(summary['added'])} added, "
-          f"~{len(summary['updated'])} updated, "
-          f"{len(summary['skipped'])} skipped")
-    return 0
+    print(str(result))
+    return 0 if result.valid else 1
 
 
-def main(argv=None) -> int:
+def main() -> None:
     parser = build_parser()
-    args = parser.parse_args(argv)
-    if args.command == "diff":
-        return cmd_diff(args)
-    elif args.command == "sync":
-        return cmd_sync(args)
-    return 0
+    args = parser.parse_args()
+    dispatch = {"diff": cmd_diff, "sync": cmd_sync, "validate": cmd_validate}
+    sys.exit(dispatch[args.command](args))
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()
