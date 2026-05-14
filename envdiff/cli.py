@@ -32,7 +32,16 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _check_paths_exist(*paths: Path) -> None:
+    """Raise SystemExit if any of the given paths do not exist."""
+    for path in paths:
+        if not path.exists():
+            print(f"error: file not found: {path}", file=sys.stderr)
+            sys.exit(2)
+
+
 def cmd_diff(args) -> int:
+    _check_paths_exist(args.source, args.target)
     result = diff_envs(args.source, args.target)
     if args.format == "json":
         print(format_diff_json(result))
@@ -42,6 +51,7 @@ def cmd_diff(args) -> int:
 
 
 def cmd_sync(args) -> int:
+    _check_paths_exist(args.source, args.target)
     result = diff_envs(args.source, args.target)
     summary = apply_sync(
         result,
