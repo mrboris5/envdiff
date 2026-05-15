@@ -1,0 +1,48 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "EnvScore",
+  "description": "Schema for the JSON output of the envdiff score command",
+  "type": "object",
+  "required": ["score", "max", "grade", "deductions"],
+  "properties": {
+    "score": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Final health score for the .env file"
+    },
+    "max": {
+      "type": "integer",
+      "description": "Maximum possible score (always 100)"
+    },
+    "grade": {
+      "type": "string",
+      "enum": ["A", "B", "C", "D", "F"],
+      "description": "Letter grade derived from the score"
+    },
+    "deductions": {
+      "type": "array",
+      "description": "List of individual deductions that reduced the score",
+      "items": {
+        "type": "object",
+        "required": ["category", "deduction", "reason"],
+        "properties": {
+          "category": {
+            "type": "string",
+            "enum": ["lint", "validation", "security"],
+            "description": "Which analysis category flagged this issue"
+          },
+          "deduction": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Points deducted for this issue"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Human-readable explanation of the deduction"
+          }
+        }
+      }
+    }
+  }
+}
