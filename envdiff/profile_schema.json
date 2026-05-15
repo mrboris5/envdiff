@@ -1,0 +1,42 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "EnvProfile",
+  "description": "Schema for an envdiff environment profile file",
+  "type": "object",
+  "required": ["name"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Unique name identifying this profile (e.g. 'production', 'staging')",
+      "minLength": 1
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable description of the profile",
+      "default": ""
+    },
+    "required_keys": {
+      "type": "array",
+      "description": "Keys that MUST be present in the .env file",
+      "items": { "type": "string", "pattern": "^[A-Z_][A-Z0-9_]*$" },
+      "uniqueItems": true,
+      "default": []
+    },
+    "optional_keys": {
+      "type": "array",
+      "description": "Keys that MAY be present but are not required",
+      "items": { "type": "string", "pattern": "^[A-Z_][A-Z0-9_]*$" },
+      "uniqueItems": true,
+      "default": []
+    }
+  },
+  "additionalProperties": false,
+  "examples": [
+    {
+      "name": "production",
+      "description": "Required variables for production deployment",
+      "required_keys": ["DATABASE_URL", "SECRET_KEY", "ALLOWED_HOSTS"],
+      "optional_keys": ["DEBUG", "LOG_LEVEL", "SENTRY_DSN"]
+    }
+  ]
+}
