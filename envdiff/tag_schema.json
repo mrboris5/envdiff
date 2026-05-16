@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "EnvDiff Tag Store",
+  "description": "Schema for .env.tags.json — stores metadata tags for .env keys",
+  "type": "object",
+  "required": ["tags"],
+  "properties": {
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["key", "tags"],
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "The .env key being tagged"
+          },
+          "tags": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "List of tag labels"
+          },
+          "note": {
+            "type": ["string", "null"],
+            "description": "Optional human-readable note"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
