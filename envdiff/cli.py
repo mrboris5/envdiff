@@ -91,19 +91,24 @@ def cmd_lint(args: argparse.Namespace) -> int:
 
 
 def main() -> None:
+    """Parse arguments and dispatch to the appropriate subcommand handler."""
     parser = build_parser()
     args = parser.parse_args()
-    dispatch = {
+
+    commands = {
         "diff": cmd_diff,
         "sync": cmd_sync,
         "validate": cmd_validate,
         "lint": cmd_lint,
     }
-    if args.command not in dispatch:
+
+    if args.command is None:
         parser.print_help()
         sys.exit(0)
-    sys.exit(dispatch[args.command](args))
 
+    handler = commands.get(args.command)
+    if handler is None:
+        print(f"Error: unknown command '{args.command}'", file=sys.stderr)
+        sys.exit(2)
 
-if __name__ == "__main__":
-    main()
+    sys.exit(handler(args))
