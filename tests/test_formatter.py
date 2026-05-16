@@ -67,3 +67,25 @@ def test_format_diff_json_summary_keys():
     summary = format_diff_json(result)["summary"]
     for key in ("added", "missing", "changed", "same"):
         assert key in summary
+
+
+def test_format_diff_json_entry_statuses():
+    """Verify that entries with different statuses are reflected in the JSON output."""
+    entries = [
+        _make_entry("NEW_KEY", DiffStatus.ADDED, src="value1"),
+        _make_entry("OLD_KEY", DiffStatus.MISSING, tgt="value2"),
+        _make_entry("CHANGED_KEY", DiffStatus.CHANGED, src="old", tgt="new"),
+        _make_entry("SAME_KEY", DiffStatus.SAME, src="same", tgt="same"),
+    ]
+    result = DiffResult(
+        source_file=Path("a"),
+        target_file=Path("b"),
+        entries=entries,
+    )
+    data = format_diff_json(result)
+    summary = data["summary"]
+    assert summary["added"] == 1
+    assert summary["missing"] == 1
+    assert summary["changed"] == 1
+    assert summary["same"] == 1
+    assert data["has_diff"] is True
