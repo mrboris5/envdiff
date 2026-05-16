@@ -19,6 +19,18 @@ _STATUS_LABELS = {
 }
 
 
+def _format_entry_line(entry, show_values: bool = False) -> str:
+    """Format a single DiffEntry into a display line."""
+    symbol = _STATUS_SYMBOLS[entry.status]
+    label = _STATUS_LABELS[entry.status]
+    if show_values and entry.status == DiffStatus.CHANGED:
+        return (
+            f"  {symbol} [{label}] {entry.key}: "
+            f"{entry.source_value!r} -> {entry.target_value!r}"
+        )
+    return f"  {symbol} [{label}] {entry.key}"
+
+
 def format_diff_text(result: DiffResult, show_values: bool = False) -> str:
     """Return a human-readable text representation of a DiffResult."""
     lines: List[str] = []
@@ -26,15 +38,7 @@ def format_diff_text(result: DiffResult, show_values: bool = False) -> str:
     lines.append("-" * 60)
 
     for entry in sorted(result.entries, key=lambda e: e.key):
-        symbol = _STATUS_SYMBOLS[entry.status]
-        label = _STATUS_LABELS[entry.status]
-        if show_values and entry.status == DiffStatus.CHANGED:
-            lines.append(
-                f"  {symbol} [{label}] {entry.key}: "
-                f"{entry.source_value!r} -> {entry.target_value!r}"
-            )
-        else:
-            lines.append(f"  {symbol} [{label}] {entry.key}")
+        lines.append(_format_entry_line(entry, show_values=show_values))
 
     lines.append("-" * 60)
     summary = (
