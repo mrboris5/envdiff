@@ -1,0 +1,48 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "EnvWatchEvent",
+  "description": "Schema for a JSON watch event emitted by envdiff watch --format json",
+  "type": "object",
+  "required": ["path", "current_hash", "diff"],
+  "properties": {
+    "path": {
+      "type": "string",
+      "description": "Absolute or relative path to the watched .env file"
+    },
+    "previous_hash": {
+      "type": ["string", "null"],
+      "description": "MD5 hash of the file before the change, or null on first detection"
+    },
+    "current_hash": {
+      "type": "string",
+      "description": "MD5 hash of the file after the change"
+    },
+    "diff": {
+      "type": "object",
+      "description": "Diff result between previous and current file state",
+      "required": ["added", "removed", "changed", "unchanged"],
+      "properties": {
+        "added": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Keys present in the new version but not the old"
+        },
+        "removed": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Keys present in the old version but not the new"
+        },
+        "changed": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Keys whose values changed between versions"
+        },
+        "unchanged": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Keys with identical values in both versions"
+        }
+      }
+    }
+  }
+}
