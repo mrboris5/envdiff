@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "EnvSortResult",
+  "description": "JSON output schema for the envdiff sort command",
+  "type": "object",
+  "required": ["source", "was_changed", "moved_keys", "sorted_content"],
+  "properties": {
+    "source": {
+      "type": "string",
+      "description": "Path to the source .env file"
+    },
+    "was_changed": {
+      "type": "boolean",
+      "description": "Whether the sort produced a different ordering"
+    },
+    "moved_keys": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Keys whose position changed after sorting"
+    },
+    "sorted_content": {
+      "type": "string",
+      "description": "Full sorted .env file content as a string"
+    }
+  },
+  "additionalProperties": false
+}
